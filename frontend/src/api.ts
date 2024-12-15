@@ -72,7 +72,7 @@ export const fetchFromBackendWithAuth = async (
       return response.blob();
     }
     const responseText = await response.text();
-    console.debug(`Response from ${endpoint}:`, responseText);
+    //console.debug(`Response from ${endpoint}:`, responseText);
     return responseText ? JSON.parse(responseText) : { success: true };
   } catch (error) {
     console.error(`Ошибка при выполнении запроса к ${endpoint}:`, error);

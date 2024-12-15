@@ -6,13 +6,18 @@ import InvoiceForm from "./InvoiceForm";
 import GenerateInvoicesForm from "./GenerateInvoicesForm";
 import InvoiceList from "./InvoiceList";
 import CrudTable from "./common/CrudTable";
+import RootObjectForm from "./common/RootObjectForm";
+import TextInput from "./common/TextInput";
+import BooleanInput from "./common/BooleanInput";
+import NumberInput from "./common/NumberInput";
+import { InvoiceDTO } from "src/common/interfaces";
 
 const InvoicesTab: React.FC = () => {
   const [usersInfo, setUsersInfo] = useState<{ id: number; fullName: string }[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [kindergartens, setKindergartens] = useState<any[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
   const [filters, setFilters] = useState<any>({
     fullName: "",
     dateIssuedFrom: "",
@@ -102,10 +107,20 @@ const InvoicesTab: React.FC = () => {
         items={invoices}
         onDelete={it => console.log(`Deleted ${JSON.stringify(it)}`)}
         editFormSupplier={(it, close) => {
+          const [item, setItem] = useState(it);
+          useEffect(() => setItem(it), [it]);
           return (
             <>
-              <div>TEST</div>
-              <button onClick={close}>close modal</button>
+              <RootObjectForm rootObject={item} rootObjectSetter={setItem}>
+                <NumberInput field="amount" header="Сумма" />
+                <button onClick={() => {
+                  it.amount = item.amount;
+                  console.log("save");
+                  close();
+                }} className="btn btn-primary mt-3">
+                  Сохранить
+                </button>
+              </RootObjectForm>
             </>
           );
         }}

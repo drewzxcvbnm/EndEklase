@@ -1,4 +1,4 @@
-import { ReactElement, TouchList, useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import { DeleteIcon, EditIcon } from "src/assets/Icons";
 import { IdSupplier } from "src/common/interfaces";
 import Modal from "src/common/Modal";
@@ -26,17 +26,22 @@ function ActionButton(props: any) {
 }
 
 function CrudTableRow<T extends IdSupplier>(props: CrudRowProps<T>) {
+  const [item, setItem] = useState<T>(props.item);
+  useEffect(() => setItem(props.item), [props.item]);
   const [openModal, setOpenModal] = useState(false);
   return (
     <>
-      <Modal isOpen={openModal}>
-        {props.editFormSupplier(props.item, () => setOpenModal(false))}
-      </Modal>
       <tr key={props.item.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
         {Object.values(props.item).map((v: any, index) => {
-          return <th key={index} className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{v}</th>;
+          return <td key={props.item.id + '.' + index} className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{v}</td>;
         })}
-        <th>
+        <td key={props.item.id + '.' + Object.values(props.item).length}>
+          <Modal isOpen={openModal}>
+            {props.editFormSupplier(item, () => {
+              setOpenModal(false)
+              setItem(item);
+            })}
+          </Modal>
           <div className="flex align-center justify-center">
             <ActionButton onClick={() => {
               setOpenModal(true);
@@ -47,7 +52,7 @@ function CrudTableRow<T extends IdSupplier>(props: CrudRowProps<T>) {
               <DeleteIcon />
             </ActionButton>
           </div>
-        </th>
+        </td>
       </tr>
     </>
   );
@@ -73,6 +78,7 @@ export default function CrudTable<T extends IdSupplier>(props: CrudTableProps<T>
       </thead>
       <tbody>
         {items.map((it) => <CrudTableRow
+          key={it.id}
           editFormSupplier={props.editFormSupplier}
           item={it}
           deleteItem={() => {
