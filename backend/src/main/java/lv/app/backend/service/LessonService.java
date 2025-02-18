@@ -90,6 +90,7 @@ public class LessonService {
                 .collect(Collectors.toList());
     }
 
+
     @Transactional
     public List<AttendanceDTO> getAttendanceByGroupAndMonth(Long groupId, YearMonth month) {
         LocalDate startDate = month.atDay(1);

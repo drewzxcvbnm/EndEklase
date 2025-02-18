@@ -21,6 +21,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     @Query("SELECT DISTINCT l FROM Lesson l " +
             "JOIN l.attendances a " +
             "JOIN a.child c " +
-            "WHERE c.parent.id = :userId")
+            "WHERE c.parent.id = :userId AND a.status = 'ATTENDED'")
     List<Lesson> findLessonsByUserId(@Param("userId") Long userId);
+
 }

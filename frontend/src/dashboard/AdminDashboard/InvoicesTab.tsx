@@ -38,9 +38,16 @@ const InvoicesTab: React.FC = () => {
   const loadInvoices = async () => {
     if (token) {
       const fetchedInvoices = await getRequest<InvoiceDTO[]>("admin/invoices");
-      setInvoices(fetchedInvoices || []);
+  
+      setInvoices((prevInvoices) => {
+        const invoiceMap = new Map(prevInvoices.map(inv => [inv.id, inv]));
+        return fetchedInvoices
+          .map(inv => invoiceMap.get(inv.id) || inv)
+          .sort((a, b) => a.id - b.id);
+      });
     }
   };
+  
 
   const handleDeleteInvoice = async (invoice: InvoiceDTO) => {
     if (!token || invoice.id === undefined) return;
@@ -52,8 +59,11 @@ const InvoicesTab: React.FC = () => {
 
   const handleInvoiceSave = async (invoice: InvoiceDTO) => {
     try {
-      const savedInvoice = await postRequest<InvoiceDTO>("admin/invoice", invoice);
-      setInvoices((prevInvoices) => [...prevInvoices, savedInvoice]);
+      const savedInvoice = await putRequest<InvoiceDTO>("admin/invoice", invoice);
+  
+      setInvoices((prevInvoices) =>
+        prevInvoices.map((inv) => (inv.id === savedInvoice.id ? savedInvoice : inv))
+      );
     } catch (error) {
       console.error("Ошибка при сохранении инвойса:", error);
       alert("Ошибка при сохранении инвойса");
@@ -64,6 +74,10 @@ const InvoicesTab: React.FC = () => {
     try {
       await postRequest("admin/invoices", data);
       await loadInvoices();
+      setInvoices((prevInvoices) => 
+        [...prevInvoices, ...generatedInvoices].sort((a, b) => a.id - b.id)
+      );
+  
       alert("Invoices generated successfully");
     } catch (error) {
       console.error("Ошибка при генерации инвойсов:", error);
@@ -71,6 +85,7 @@ const InvoicesTab: React.FC = () => {
     }
   };
   
+
 
   return (
     <div>
@@ -93,11 +108,22 @@ const InvoicesTab: React.FC = () => {
             lessons: Array.isArray(it.lessons) ? it.lessons : [],
           });
 
+          const [userLessons, setUserLessons] = useState<LessonDTO[]>([]);
+
           useEffect(() => {
             if (token && it.userId) {
-              getLessonsByUser(token, it.userId).then(setUserLessons);
+              getLessonsByUser(token, it.userId).then(setUserLessons); 
             }
           }, [it.userId, token]);
+        
+          useEffect(() => {
+            if (userLessons.length > 0) {
+              setItem((prev) => ({
+                ...prev,
+                lessons: userLessons,
+              }));
+            }
+          }, [userLessons]);
 
           return (
             <RootObjectForm rootObject={item} rootObjectSetter={setItem}>
