@@ -19,9 +19,7 @@ import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -56,36 +54,35 @@ public class InvoiceService {
     @Transactional
     public List<InvoiceDTO> createInvoices(LocalDate startDate, LocalDate endDate) {
         List<User> users = userRepository.findAll();
-        List<Invoice> createdInvoices = users.stream()
-                .map(user -> {
-                    List<Long> lessons = lessonRepository.findUserLessonsToPay(startDate, endDate, user);
-                    if (lessons.isEmpty()) {
-                        log.error("No lessons to pay for user {}", user);
-                        return null;
-                    }
-                    return createInvoice(InvoiceCreateDTO.builder()
-                            .userId(user.getId())
-                            .lessonIds(lessons)
-                            .build());
-                })
-                .filter(invoice -> invoice != null)
-                .collect(Collectors.toList());
-
-        return createdInvoices.stream()
+        return users.stream()
+                .flatMap(user -> createInvoiceForUser(startDate, endDate, user).stream())
+                .filter(Objects::nonNull)
                 .map(entityMapper::invoiceToDto)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    private List<Invoice> createInvoiceForUser(LocalDate startDate, LocalDate endDate, User user) {
+        List<Long> lessons = lessonRepository.findUserLessonsToPay(startDate, endDate, user);
+        if (lessons.isEmpty()) {
+            log.error("No lessons to pay for user {}", user);
+            return null;
+        }
+        return createInvoice(InvoiceCreateDTO.builder()
+                .userId(user.getId())
+                .lessonIds(lessons)
+                .build());
     }
 
     @Transactional
-    public Invoice createInvoice(InvoiceCreateDTO dto) {
+    public List<Invoice> createInvoice(InvoiceCreateDTO dto) {
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found: " + dto.getUserId()));
 
         if (dto.getAmount() != null) {
-            return createManualInvoice(dto, user);
+            return Collections.singletonList(createManualInvoice(dto, user));
         }
         if (!user.isSeparateInvoices()) {
-            return makeSingleInvoice(dto, user);
+            return Collections.singletonList(makeSingleInvoice(dto, user));
         }
         return makeInvoicesForEachChild(dto, user);
     }
@@ -112,16 +109,14 @@ public class InvoiceService {
                 .collect(Collectors.toList());
     }
 
-    private Invoice makeInvoicesForEachChild(InvoiceCreateDTO dto, User user) {
+    private List<Invoice> makeInvoicesForEachChild(InvoiceCreateDTO dto, User user) {
         Function<Child, Double> costRateGenerator = getCostRateGenerator(user);
-        List<Invoice> invoices = user.getChildren().stream().map(c -> {
+        return user.getChildren().stream().map(c -> {
             double multiChildDiscount = costRateGenerator.apply(c);
             List<Attendance> attendancesToPay = getAttendancesToPay(c, dto.getLessonIds());
             setAttendanceCost(attendancesToPay, multiChildDiscount, user);
             return formInvoice(c.getParent(), attendancesToPay);
         }).toList();
-
-        return invoices.isEmpty() ? null : invoices.get(0);
     }
 
     private Invoice createManualInvoice(InvoiceCreateDTO dto, User user) {

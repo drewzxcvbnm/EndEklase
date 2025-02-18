@@ -5,7 +5,6 @@ import lv.app.backend.dto.*;
 import lv.app.backend.mappers.EntityMapper;
 import lv.app.backend.mappers.UserMapper;
 import lv.app.backend.model.Child;
-import lv.app.backend.model.Invoice;
 import lv.app.backend.model.repository.UserRepository;
 import lv.app.backend.service.*;
 import org.slf4j.Logger;
@@ -99,6 +98,7 @@ public class AdminController {
         childService.deleteChildren(childIds);
         return ResponseEntity.ok().build();
     }
+
     @PatchMapping("/children")
     public ResponseEntity<Void> addChild(@RequestBody List<ChildDTO> children) {
         childService.updateChildren(children);
@@ -132,13 +132,11 @@ public class AdminController {
     }
 
     @PostMapping("/invoice")
-    public ResponseEntity<InvoiceDTO> createInvoice(@RequestBody InvoiceCreateDTO dto) {
-        Invoice savedInvoice = invoiceService.createInvoice(dto);
-        if (savedInvoice == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        InvoiceDTO responseDto = entityMapper.invoiceToDto(savedInvoice);
-        return ResponseEntity.ok(responseDto);
+    public ResponseEntity<List<InvoiceDTO>> createInvoice(@RequestBody InvoiceCreateDTO dto) {
+        List<InvoiceDTO> invoices = invoiceService.createInvoice(dto).stream()
+                .map(entityMapper::invoiceToDto)
+                .toList();
+        return ResponseEntity.ok(invoices);
     }
 
     @PutMapping("/invoice")
