@@ -10,11 +10,7 @@ export interface InvoiceDTO extends IdSupplier {
   dueDate: Date;
   amount: number;
   status: string;
-  lessons: LessonDTO[];
-}
-
-export interface InvoiceEditDTO extends InvoiceDTO {
-  lessons: LessonDTO[]
+  lessons?: LessonDTO[];
 }
 
 export interface LessonDTO {

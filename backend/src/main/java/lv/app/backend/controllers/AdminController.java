@@ -151,6 +151,11 @@ public class AdminController {
         return ResponseEntity.ok(invoices);
     }
 
+    @GetMapping("/invoice/{invoiceId}")
+    public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable Long invoiceId) {
+        return ResponseEntity.ok(invoiceService.getInvoiceById(invoiceId));
+    }
+
     @PutMapping("/attendances")
     public ResponseEntity<Void> updateAttendance(@RequestBody AttendanceDTO attendanceDTO) {
         System.out.println("Received request to update attendance: " + attendanceDTO);

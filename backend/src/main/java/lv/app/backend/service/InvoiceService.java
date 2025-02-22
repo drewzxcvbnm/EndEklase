@@ -102,6 +102,13 @@ public class InvoiceService {
     }
 
     @Transactional
+    public InvoiceDTO getInvoiceById(Long invoiceId) {
+        return invoiceRepository.findById(invoiceId)
+                .map(entityMapper::invoiceToDto)
+                .orElseThrow(() -> new RuntimeException("Invoice not found with id: " + invoiceId));
+    }
+
+    @Transactional
     public List<InvoiceDTO> getInvoicesByUser(Long userId) {
         List<Invoice> invoices = invoiceRepository.findByUserId(userId);
         return invoices.stream()

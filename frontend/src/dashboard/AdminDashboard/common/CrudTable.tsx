@@ -7,14 +7,15 @@ import Modal from "src/common/Modal";
 interface CrudTableProps<T extends IdSupplier> {
   items: T[];
   columns?: string[];
+  excludeColumns?: string[];
   onDelete: (item: T) => void;
-  editFormSupplier: (item: T, closeForm: () => void) => ReactElement;
+  editFormSupplier: (item: T, closeForm: () => void, isOpen: boolean) => ReactElement;
 }
 
 interface CrudRowProps<T extends IdSupplier> {
   item: T;
   deleteItem: () => void;
-  editFormSupplier: (item: T, closeForm: () => void) => ReactElement;
+  editFormSupplier: (item: T, closeForm: () => void, isOpen: boolean) => ReactElement;
 }
 
 function ActionButton(props: any) {
@@ -40,7 +41,7 @@ function CrudTableRow<T extends IdSupplier>(props: CrudRowProps<T>) {
             {props.editFormSupplier(item, () => {
               setOpenModal(false)
               setItem(item);
-            })}
+            }, openModal)}
           </Modal>
           <div className="flex align-center justify-center">
             <ActionButton onClick={() => {
@@ -61,7 +62,10 @@ function CrudTableRow<T extends IdSupplier>(props: CrudRowProps<T>) {
 export default function CrudTable<T extends IdSupplier>(props: CrudTableProps<T>) {
   const [items, setItems] = useState(props.items);
   useEffect(() => setItems(props.items), [props.items])
-  const columns = props.columns || (items.length ? Object.keys(items[0]) : []);
+  let columns = props.columns || (items.length ? Object.keys(items[0]) : []);
+  if (props.excludeColumns) {
+    columns = columns.filter(c => !props.excludeColumns?.includes(c));
+  }
 
   if (!columns.length) {
     return (<>

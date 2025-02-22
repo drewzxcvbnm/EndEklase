@@ -9,7 +9,6 @@ import RootObjectForm from "./common/RootObjectForm";
 import NumberInput from "./common/NumberInput";
 import {
   InvoiceDTO,
-  InvoiceEditDTO,
   LessonDTO,
 } from "src/common/interfaces";
 import MultiSelect from "./common/MultiSelect";
@@ -18,7 +17,6 @@ const InvoicesTab: React.FC = () => {
   const [usersInfo, setUsersInfo] = useState<{ id: number; fullName: string }[]>([]);
   const [lessons, setLessons] = useState<LessonDTO[]>([]);
   const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
-  const [userLessons, setUserLessons] = useState<LessonDTO[]>([]);
 
   const token = useSelector((state: RootState) => state.auth.token);
 
@@ -38,7 +36,7 @@ const InvoicesTab: React.FC = () => {
   const loadInvoices = async () => {
     if (token) {
       const fetchedInvoices = await getRequest<InvoiceDTO[]>("admin/invoices");
-  
+
       setInvoices((prevInvoices) => {
         const invoiceMap = new Map(prevInvoices.map(inv => [inv.id, inv]));
         return fetchedInvoices
@@ -47,7 +45,7 @@ const InvoicesTab: React.FC = () => {
       });
     }
   };
-  
+
 
   const handleDeleteInvoice = async (invoice: InvoiceDTO) => {
     if (!token || invoice.id === undefined) return;
@@ -60,7 +58,7 @@ const InvoicesTab: React.FC = () => {
   const handleInvoiceSave = async (invoice: InvoiceDTO) => {
     try {
       const savedInvoice = await putRequest<InvoiceDTO>("admin/invoice", invoice);
-  
+
       setInvoices((prevInvoices) =>
         prevInvoices.map((inv) => (inv.id === savedInvoice.id ? savedInvoice : inv))
       );
@@ -74,17 +72,17 @@ const InvoicesTab: React.FC = () => {
     try {
       await postRequest("admin/invoices", data);
       await loadInvoices();
-      setInvoices((prevInvoices) => 
-        [...prevInvoices, ...generatedInvoices].sort((a, b) => a.id - b.id)
-      );
-  
+      //setInvoices((prevInvoices) => 
+      //  [...prevInvoices, ...generatedInvoices].sort((a, b) => a.id - b.id)
+      //);
+
       alert("Invoices generated successfully");
     } catch (error) {
       console.error("Ошибка при генерации инвойсов:", error);
       alert("Ошибка при генерации инвойсов");
     }
   };
-  
+
 
 
   return (
@@ -95,6 +93,7 @@ const InvoicesTab: React.FC = () => {
         <GenerateInvoicesForm kindergartens={[]} onGenerate={handleGenerateInvoices} />
       </div>
       <CrudTable
+        excludeColumns={["lessons"]}
         items={invoices as Required<InvoiceDTO>[]}
         onDelete={(item) => {
           const invoice = invoices.find((inv) => inv.id === item.id);
@@ -102,8 +101,8 @@ const InvoicesTab: React.FC = () => {
             handleDeleteInvoice(invoice);
           }
         }}
-        editFormSupplier={(it, close) => {
-          const [item, setItem] = useState<InvoiceEditDTO>({
+        editFormSupplier={(it, close, isOpen) => {
+          const [item, setItem] = useState<InvoiceDTO>({
             ...it,
             lessons: Array.isArray(it.lessons) ? it.lessons : [],
           });
@@ -111,11 +110,11 @@ const InvoicesTab: React.FC = () => {
           const [userLessons, setUserLessons] = useState<LessonDTO[]>([]);
 
           useEffect(() => {
-            if (token && it.userId) {
-              getLessonsByUser(token, it.userId).then(setUserLessons); 
+            if (token && it.userId && isOpen) {
+              getLessonsByUser(token, it.userId).then(setUserLessons);
             }
-          }, [it.userId, token]);
-        
+          }, [it.userId, token, isOpen]);
+
           useEffect(() => {
             if (userLessons.length > 0) {
               setItem((prev) => ({
@@ -145,9 +144,11 @@ const InvoicesTab: React.FC = () => {
                 <button
                   onClick={() => {
                     putRequest("admin/invoice", item).then(() => {
-                      setInvoices((prev) =>
-                        prev.map((inv) => (inv.id === item.id ? item : inv))
-                      );
+                      getRequest<InvoiceDTO>(`admin/invoice/${item.id}`).then(newInv => {
+                        setInvoices(
+                          invoices.map((inv) => (inv.id === newInv.id ? newInv : inv))
+                        );
+                      });
                     });
                     close();
                   }}
