@@ -65,7 +65,7 @@ public class InvoiceService {
         List<Long> lessons = lessonRepository.findUserLessonsToPay(startDate, endDate, user);
         if (lessons.isEmpty()) {
             log.error("No lessons to pay for user {}", user);
-            return null;
+            return Collections.emptyList();
         }
         return createInvoice(InvoiceCreateDTO.builder()
                 .userId(user.getId())
